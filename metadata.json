@@ -1,0 +1,8 @@
+{
+  "name": "Diário Mágico AI",
+  "description": "Um diário digital com alma de papel. Guarde suas memórias escrevendo, falando ou escaneando.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
