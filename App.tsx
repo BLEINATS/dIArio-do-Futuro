@@ -212,11 +212,13 @@ const ACHIEVEMENT_DEFINITIONS = [
     { id: 'photo_memory', title: 'Álbum Vivo', description: 'Adicione 5 fotos ao diário', icon: <ImageIcon className="w-6 h-6"/>, xpReward: 100, target: 5 },
 ];
 
-const MOCK_REWARDS: Reward[] = [
-    { id: 'theme_nature', title: 'Tema "Natureza"', type: 'theme', imageUrl: '', isUnlocked: true, requiredLevel: 1 },
-    { id: 'stickers_cosmic', title: 'Adesivos Cósmicos', type: 'sticker_pack', imageUrl: 'https://cdn-icons-png.flaticon.com/512/4712/4712555.png', isUnlocked: false, requiredLevel: 3 },
-    { id: 'icon_writer', title: 'Ícone "Escritor"', type: 'icon', imageUrl: '', isUnlocked: false, requiredLevel: 5 },
-    { id: 'stickers_vintage', title: 'Adesivos Vintage', type: 'sticker_pack', imageUrl: 'https://cdn-icons-png.flaticon.com/512/2665/2665402.png', isUnlocked: false, requiredLevel: 8 },
+// REAL REWARDS DATA
+const REWARDS_DATA: Reward[] = [
+    { id: 'theme_nature', title: 'Tema "Natureza"', type: 'theme', imageUrl: '', isUnlocked: false, requiredLevel: 2 },
+    { id: 'theme_cozy', title: 'Tema "Aconchego"', type: 'theme', imageUrl: '', isUnlocked: false, requiredLevel: 5 },
+    { id: 'sticker_pack_1', title: 'Adesivos Cósmicos', type: 'sticker_pack', imageUrl: 'https://cdn-icons-png.flaticon.com/512/4712/4712555.png', isUnlocked: false, requiredLevel: 3 },
+    { id: 'icon_mystic', title: 'Ícone "Místico"', type: 'icon', imageUrl: 'https://cdn-icons-png.flaticon.com/512/3600/3600926.png', isUnlocked: false, requiredLevel: 8 },
+    { id: 'theme_travel', title: 'Tema "Viagem"', type: 'theme', imageUrl: '', isUnlocked: false, requiredLevel: 10 },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -261,7 +263,6 @@ const App: React.FC = () => {
   const [dailyMood, setDailyMood] = useState<string | null>(null);
   const [dailyQuote, setDailyQuote] = useState("Carregando inspiração...");
   const [searchQuery, setSearchQuery] = useState('');
-  // REPLACED: selectedTag with selectedHomeDate
   const [selectedHomeDate, setSelectedHomeDate] = useState<Date>(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(new Date());
 
@@ -300,7 +301,7 @@ const App: React.FC = () => {
   const [editorLocationConfig, setEditorLocationConfig] = useState<LocationConfig>({ name: '', address: '', condition: 'arrive', active: false });
   const [editorEvent, setEditorEvent] = useState<ImportantEvent | undefined>(undefined);
   const [showEventMenu, setShowEventMenu] = useState(false);
-  const [showEditorHelp, setShowEditorHelp] = useState(false); // NEW: Help State
+  const [showEditorHelp, setShowEditorHelp] = useState(false);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -366,7 +367,6 @@ const App: React.FC = () => {
     const storedAbundance = localStorage.getItem(`abundance_${todayKey}`);
     if (storedAbundance) setAbundanceCompleted(JSON.parse(storedAbundance));
     
-    // Initialize week start to Sunday of current week
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day;
@@ -505,6 +505,38 @@ const App: React.FC = () => {
       });
   }, [entries, userProgress.streak, savedBooks, abundanceCompleted, claimedAchievementIds]);
 
+  // DYNAMIC REWARDS LIST BASED ON LEVEL
+  const rewardsList = useMemo(() => {
+      return REWARDS_DATA.map(reward => ({
+          ...reward,
+          isUnlocked: userProgress.level >= reward.requiredLevel
+      }));
+  }, [userProgress.level]);
+
+  const handleEquipReward = (reward: Reward) => {
+      if (!reward.isUnlocked) {
+          alert(`Você precisa atingir o nível ${reward.requiredLevel} para desbloquear esta recompensa.`);
+          return;
+      }
+      
+      if (reward.type === 'theme') {
+          const themeId = reward.id.replace('theme_', '');
+          // Check if theme exists in THEMES constant
+          if (THEMES.some(t => t.id === themeId)) {
+              setEditorTheme(themeId as any);
+              alert(`Tema "${reward.title}" aplicado ao Editor!`);
+          } else {
+              alert("Tema desbloqueado!");
+          }
+      } else if (reward.type === 'icon') {
+          if (reward.imageUrl) {
+              setUserProfile(prev => ({...prev, avatar: reward.imageUrl}));
+              alert(`Ícone "${reward.title}" definido como avatar!`);
+          }
+      } else {
+          alert(`Pacote "${reward.title}" pronto para uso!`);
+      }
+  };
 
   const loadDailyEssentials = async () => {
     try {
@@ -527,20 +559,17 @@ const App: React.FC = () => {
     }
   };
 
-  // --- Logic ---
-
+  // ... (Rest of the logic: getFilteredEntries, handleSaveEntry, etc. remains unchanged) ...
   const getFilteredEntries = () => {
     return entries.filter(entry => {
       const matchesSearch = (entry.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              entry.title.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // Filter by Selected Date in Calendar Strip
       const entryDate = new Date(entry.createdAt);
       const isSameDate = entryDate.toDateString() === selectedHomeDate.toDateString();
 
       const matchesTimeline = showTimelineOnly ? !!entry.importantEvent : true;
       
-      // If searching, ignore date filter. If not searching, apply date filter.
       if (searchQuery) {
           return matchesSearch && matchesTimeline;
       }
@@ -701,7 +730,6 @@ const App: React.FC = () => {
       setEditorContent(prev => (prev ? prev + "\n\n" : "") + q + "\n");
   };
 
-  // --- Calendar Logic ---
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -753,7 +781,6 @@ const App: React.FC = () => {
       }
   };
 
-  // --- Weekly Strip Logic ---
   const getWeekDays = () => {
       const days = [];
       for (let i = 0; i < 7; i++) {
@@ -835,7 +862,6 @@ const App: React.FC = () => {
     input.click();
   };
 
-  // --- Speech to Text ---
   const handleSpeechToText = () => {
     const SpeechRecognition = (window as unknown as IWindow).SpeechRecognition || (window as unknown as IWindow).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -863,13 +889,11 @@ const App: React.FC = () => {
     recognition.start();
   };
 
-  // --- Settings Handlers ---
   const handleThemeChange = (mode: 'light' | 'dark') => {
     setAppSettings(prev => ({...prev, themeMode: mode}));
   };
 
   const handleExportData = () => {
-      // Feature Gate: Backup is Pro only
       if (userProgress.subscriptionTier === 'free') {
           setShowSubscriptionModal(true);
           return;
@@ -896,7 +920,6 @@ const App: React.FC = () => {
   };
 
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
-      // Feature Gate
       if (userProgress.subscriptionTier === 'free') {
           setShowSubscriptionModal(true);
           return;
@@ -1013,13 +1036,11 @@ const App: React.FC = () => {
       setLoadingMantra(false);
   };
 
-  // --- Subscription Logic ---
   const handleSubscribe = (planId: SubscriptionTier) => {
-      // Simulate payment processing
       setTimeout(() => {
           setUserProgress(prev => ({...prev, subscriptionTier: planId}));
           setShowSubscriptionModal(false);
-          setCelebrationMoodId('awesome'); // Trigger confetti
+          setCelebrationMoodId('awesome'); 
           setShowCelebration(true);
           setTimeout(() => setShowCelebration(false), 3000);
           alert(`Parabéns! Você agora é ${planId === 'mystic' ? 'Arquimago' : (planId === 'pro' ? 'Grimório' : 'Iniciado')}.`);
@@ -1035,7 +1056,7 @@ const App: React.FC = () => {
       }
   };
 
-  // ... (Sub-components Onboarding, BookCreator, PIN Lock remain unchanged) ...
+  // ... (Onboarding, BookCreator, PIN Lock) ...
   const Onboarding = () => {
     const [step, setStep] = useState(0);
 
@@ -1044,7 +1065,6 @@ const App: React.FC = () => {
       else {
         localStorage.setItem('onboarding_complete', 'true');
         setHasSeenOnboarding(true);
-        // Re-enable lock if pin is set, so they have to enter it after "logging in" via onboarding
         if (appSettings.isPinEnabled && appSettings.pinCode) {
             setIsLocked(true);
         }
@@ -1061,7 +1081,6 @@ const App: React.FC = () => {
 
     return (
       <div className="fixed inset-0 z-[100] bg-[#13111C] flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
-        {/* Background Effects */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-purple-900/20 to-[#13111C]"></div>
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
@@ -1436,7 +1455,6 @@ const App: React.FC = () => {
       
       {/* ... (Styles and Overlays) ... */}
       <style>{`
-        /* ... (Existing animations) ... */
         @keyframes mood-glow {
           0%, 100% { box-shadow: 0 0 5px var(--mood-color), inset 0 0 2px var(--mood-color); border-color: var(--mood-color); }
           50% { box-shadow: 0 0 2px var(--mood-color), inset 0 0 1px var(--mood-color); border-color: transparent; }
@@ -1712,7 +1730,6 @@ const App: React.FC = () => {
                         const moodIcon = MOODS.find(m => m.id === entry.mood)?.icon;
                         const isImportant = !!entry.importantEvent;
                         
-                        // FIX: Get correct label in Portuguese and Type Data
                         const importantType = entry.importantEvent ? EVENT_TYPES.find(t => t.id === entry.importantEvent?.type) : null;
                         const importantLabel = importantType ? importantType.label : '';
 
@@ -1750,7 +1767,6 @@ const App: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* NEW HOVER OVERLAY: SLIDES DOWN FROM TOP */}
                                 {isImportant && (
                                     <div className="absolute top-0 left-0 w-full bg-black/90 backdrop-blur-md z-40 p-4 transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-3 shadow-xl border-b border-white/10">
                                          <div className={`p-2 rounded-full ${importantType?.color || 'bg-yellow-500'} text-white shrink-0`}>
@@ -1802,7 +1818,6 @@ const App: React.FC = () => {
                                             <p className={`text-sm whitespace-pre-wrap ${hasImage ? 'text-gray-200' : (isDarkMode ? 'text-gray-400' : 'text-gray-600')}`}>{entry.content}</p>
                                         </div>
                                         
-                                        {/* Task Preview in Card - RESTORED */}
                                         {entry.tasks && entry.tasks.length > 0 && (
                                             <div className={`mt-2 pt-2 border-t ${hasImage ? 'border-white/20' : 'border-gray-500/20'} shrink-0`}>
                                                 <div className={`flex items-center gap-2 text-xs font-bold mb-1 ${hasImage ? 'text-gray-300' : 'text-gray-500'}`}>
@@ -1822,7 +1837,6 @@ const App: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {/* FIX: Date moved to bottom right */}
                                         <div className={`absolute bottom-4 right-5 text-[10px] font-bold uppercase ${hasImage ? 'text-white/60' : 'text-gray-500'}`}>
                                             {new Date(entry.createdAt).toLocaleDateString('pt-BR')}
                                         </div>
@@ -2104,7 +2118,7 @@ const App: React.FC = () => {
           </button>
       )}
       
-      {/* ... (Restored Modals: Settings, Calendar, Achievements, Subscription, ProfileEdit, PinSetup, WipeConfirm, Editor) ... */}
+      {/* ... (Modals: Settings, Calendar, Achievements, Subscription, ProfileEdit, PinSetup, WipeConfirm, Editor) ... */}
       {/* SETTINGS MODAL */}
       {isSettingsOpen && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center animate-in fade-in">
@@ -2354,17 +2368,27 @@ const App: React.FC = () => {
                           </>
                       ) : (
                           <div className="grid grid-cols-2 gap-4">
-                              {MOCK_REWARDS.map(reward => (
-                                  <div key={reward.id} className={`relative p-4 rounded-2xl border flex flex-col items-center text-center gap-3 ${reward.isUnlocked ? 'bg-purple-500/10 border-purple-500/30' : 'bg-white/5 border-white/5 opacity-50'}`}>
-                                      {!reward.isUnlocked && <div className="absolute top-2 right-2"><Lock className="w-4 h-4 text-gray-500"/></div>}
+                              {rewardsList.map(reward => (
+                                  <div key={reward.id} className={`relative p-4 rounded-2xl border flex flex-col items-center text-center gap-3 transition-all ${reward.isUnlocked ? 'bg-purple-500/10 border-purple-500/30 shadow-lg shadow-purple-500/10' : 'bg-white/5 border-white/5 opacity-50'}`}>
+                                      {!reward.isUnlocked && (
+                                          <div className="absolute top-2 right-2 bg-black/50 rounded-full p-1">
+                                              <Lock className="w-3 h-3 text-gray-400"/>
+                                          </div>
+                                      )}
                                       <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${reward.isUnlocked ? 'bg-purple-500/20' : 'bg-white/5'}`}>
-                                          {reward.imageUrl ? <img src={reward.imageUrl} className="w-10 h-10"/> : <Gift className="w-8 h-8 text-purple-400"/>}
+                                          {reward.imageUrl ? <img src={reward.imageUrl} className="w-10 h-10 object-contain"/> : <Gift className="w-8 h-8 text-purple-400"/>}
                                       </div>
                                       <div>
                                           <h4 className="font-bold text-sm">{reward.title}</h4>
                                           <p className="text-[10px] text-gray-500 mt-1">{reward.isUnlocked ? 'Desbloqueado' : `Nível ${reward.requiredLevel}`}</p>
                                       </div>
-                                      {reward.isUnlocked && <button className="text-xs bg-purple-600 px-3 py-1 rounded-full font-bold mt-2">Equipar</button>}
+                                      {reward.isUnlocked ? (
+                                          <button onClick={() => handleEquipReward(reward)} className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-4 py-1.5 rounded-full font-bold mt-2 transition-colors shadow-lg shadow-purple-500/30">
+                                              Equipar
+                                          </button>
+                                      ) : (
+                                          <div className="text-[10px] bg-white/10 px-3 py-1 rounded-full mt-2 text-gray-400">Bloqueado</div>
+                                      )}
                                   </div>
                               ))}
                           </div>
