@@ -160,13 +160,38 @@ const GENRE_DATA = {
     }
 };
 
+// UPDATED ONBOARDING STEPS TO REFLECT ALL FEATURES
 const ONBOARDING_STEPS = [
-  { title: "Bem-vindo ao Diário IA", desc: "Seu confidente digital com alma de papel e inteligência artificial.", icon: <Book className="w-16 h-16 text-purple-500"/> },
-  { title: "Crie Memórias", desc: "Escreva, fale ou escaneie suas páginas físicas. Adicione fotos e adesivos.", icon: <PenTool className="w-16 h-16 text-blue-500"/> },
-  { title: "Tarefas e Metas", desc: "Organize seu dia com listas de tarefas e defina lembretes importantes.", icon: <CheckSquare className="w-16 h-16 text-green-500"/> },
-  { title: "Personalize Tudo", desc: "Fontes, temas e adesivos para deixar seu diário com a sua cara.", icon: <Palette className="w-16 h-16 text-pink-500"/> },
-  { title: "Humor e Metas", desc: "Acompanhe seu bem-estar emocional com insights inteligentes.", icon: <Smile className="w-16 h-16 text-yellow-500"/> },
-  { title: "Seu Livro IA", desc: "Transforme suas memórias em narrativas e livros emocionantes.", icon: <Sparkles className="w-16 h-16 text-purple-500"/> },
+  { 
+      title: "Diário Mágico IA", 
+      desc: "Mais que um diário. Um guardião de memórias com inteligência artificial e alma de papel.", 
+      icon: <Book className="w-20 h-20 text-[#8B5CF6] drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]"/> 
+  },
+  { 
+      title: "Captura Multissensorial", 
+      desc: "Escreva, dite por voz ou use o Scanner Mágico para digitalizar páginas de livros físicos instantaneamente.", 
+      icon: <ScanText className="w-20 h-20 text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]"/> 
+  },
+  { 
+      title: "Santuário de Manifestação", 
+      desc: "Ative a Lei da Atração. Complete rituais de abundância, gere mantras e visualize seu progresso no Círculo Dourado.", 
+      icon: <Coins className="w-20 h-20 text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]"/> 
+  },
+  { 
+      title: "Segurança Absoluta", 
+      desc: "Seus segredos estão trancados. Proteja seu diário com PIN ou Biometria (Face ID) para total privacidade.", 
+      icon: <Shield className="w-20 h-20 text-green-400 drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]"/> 
+  },
+  { 
+      title: "De Memórias a Livros", 
+      desc: "A IA transforma seus relatos em capítulos narrativos emocionantes. Construa sua própria biblioteca.", 
+      icon: <Feather className="w-20 h-20 text-pink-400 drop-shadow-[0_0_15px_rgba(244,114,182,0.5)]"/> 
+  },
+  { 
+      title: "Sua Jornada Épica", 
+      desc: "Ganhe XP a cada escrita, suba de nível e desbloqueie conquistas e temas exclusivos.", 
+      icon: <Crown className="w-20 h-20 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]"/> 
+  },
 ];
 
 const ABUNDANCE_EXERCISES = [
@@ -217,7 +242,6 @@ const DEFAULT_PROFILE: UserProfile = {
 };
 
 const App: React.FC = () => {
-  // ... (State and Effects remain unchanged) ...
   // --- Global State ---
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'diary' | 'book' | 'analytics' | 'profile'>('home');
@@ -839,7 +863,6 @@ const App: React.FC = () => {
     recognition.start();
   };
 
-  // ... (Settings Handlers, Export/Import, Wipe, PIN, Biometric, Mantra, Subscribe remain unchanged) ...
   // --- Settings Handlers ---
   const handleThemeChange = (mode: 'light' | 'dark') => {
     setAppSettings(prev => ({...prev, themeMode: mode}));
@@ -1003,6 +1026,15 @@ const App: React.FC = () => {
       }, 1000);
   };
 
+  const handleLogout = () => {
+      if (confirm("Deseja sair e voltar para a tela de boas-vindas?")) {
+          setIsLocked(false);
+          setHasSeenOnboarding(false);
+          localStorage.removeItem('onboarding_complete');
+          setActiveTab('home');
+      }
+  };
+
   // ... (Sub-components Onboarding, BookCreator, PIN Lock remain unchanged) ...
   const Onboarding = () => {
     const [step, setStep] = useState(0);
@@ -1012,22 +1044,65 @@ const App: React.FC = () => {
       else {
         localStorage.setItem('onboarding_complete', 'true');
         setHasSeenOnboarding(true);
+        // Re-enable lock if pin is set, so they have to enter it after "logging in" via onboarding
+        if (appSettings.isPinEnabled && appSettings.pinCode) {
+            setIsLocked(true);
+        }
       }
+    };
+    
+    const skipOnboarding = () => {
+        localStorage.setItem('onboarding_complete', 'true');
+        setHasSeenOnboarding(true);
+        if (appSettings.isPinEnabled && appSettings.pinCode) {
+            setIsLocked(true);
+        }
     };
 
     return (
-      <div className="fixed inset-0 z-[100] bg-[#13111C] flex flex-col items-center justify-center p-8 text-center">
-        <div className="mb-8 animate-bounce">{ONBOARDING_STEPS[step].icon}</div>
-        <h1 className="text-3xl font-bold mb-4 text-white">{ONBOARDING_STEPS[step].title}</h1>
-        <p className="text-gray-400 mb-12 text-lg leading-relaxed max-w-xs mx-auto">{ONBOARDING_STEPS[step].desc}</p>
-        <div className="flex gap-2 mb-12">
-          {ONBOARDING_STEPS.map((_, i) => (
-            <div key={i} className={`h-2 rounded-full transition-all ${i === step ? 'w-8 bg-[#8B5CF6]' : 'w-2 bg-white/20'}`} />
-          ))}
+      <div className="fixed inset-0 z-[100] bg-[#13111C] flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-purple-900/20 to-[#13111C]"></div>
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-[#13111C] to-transparent"></div>
+
+        <div className="relative z-10 flex flex-col items-center max-w-md w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="mb-10 animate-float">
+                {ONBOARDING_STEPS[step].icon}
+            </div>
+            
+            <h1 className="text-4xl font-bold mb-4 text-white leading-tight">
+                {ONBOARDING_STEPS[step].title}
+            </h1>
+            
+            <p className="text-gray-300 mb-12 text-lg leading-relaxed">
+                {ONBOARDING_STEPS[step].desc}
+            </p>
+            
+            <div className="flex gap-3 mb-12">
+              {ONBOARDING_STEPS.map((_, i) => (
+                <div key={i} className={`h-2 rounded-full transition-all duration-500 ${i === step ? 'w-8 bg-[#8B5CF6] shadow-[0_0_10px_#8B5CF6]' : 'w-2 bg-white/20'}`} />
+              ))}
+            </div>
+            
+            <button 
+                onClick={nextStep} 
+                className="w-full py-4 bg-gradient-to-r from-[#8B5CF6] to-indigo-600 rounded-2xl font-bold text-white shadow-xl shadow-purple-900/40 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+            >
+              {step === ONBOARDING_STEPS.length - 1 ? (
+                  <>Começar Jornada <SparklesIcon className="w-5 h-5"/></>
+              ) : (
+                  <>Próximo <ChevronRight className="w-5 h-5"/></>
+              )}
+            </button>
+            
+            {step < ONBOARDING_STEPS.length - 1 && (
+                <button onClick={skipOnboarding} className="mt-6 text-sm text-gray-500 hover:text-white transition-colors">
+                    Pular Introdução
+                </button>
+            )}
         </div>
-        <button onClick={nextStep} className="w-full max-w-xs py-4 bg-[#8B5CF6] rounded-2xl font-bold text-white shadow-xl shadow-purple-900/40">
-          {step === ONBOARDING_STEPS.length - 1 ? 'Começar Jornada' : 'Próximo'}
-        </button>
       </div>
     );
   };
@@ -1985,6 +2060,14 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-gray-500/20 rounded-lg text-gray-400 group-hover:scale-110 transition-transform"><Settings className="w-5 h-5"/></div>
                             <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Configurações</span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-500"/>
+                    </button>
+                    {/* LOGOUT BUTTON */}
+                    <button onClick={handleLogout} className={`w-full py-4 rounded-2xl border flex items-center justify-between px-6 group hover:border-red-400 transition-colors ${isDarkMode ? 'bg-[#1E1B2E] border-white/10' : 'bg-white border-gray-100'}`}>
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-red-500/20 rounded-lg text-red-500 group-hover:scale-110 transition-transform"><LogOut className="w-5 h-5"/></div>
+                            <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Sair (Bem-vindo)</span>
                         </div>
                         <ChevronRight className="w-5 h-5 text-gray-500"/>
                     </button>

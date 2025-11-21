@@ -1,8 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Inicializa o SDK com a chave da API definida no vite.config.ts
-// Se a chave não existir, o app não quebrará imediatamente, mas as funções falharão graciosamente.
-const API_KEY = process.env.API_KEY || "";
+// Acessa a variável de ambiente de forma segura e nativa do Vite
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Modelo padrão para uso (Flash é mais rápido e econômico para interações rápidas)
