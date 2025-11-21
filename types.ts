@@ -1,4 +1,3 @@
-
 export type EntrySource = 'type' | 'voice' | 'scan' | 'audio_clip';
 export type FontStyle = 'inter' | 'serif' | 'handwriting' | 'mono';
 export type ThemeStyle = 'default' | 'nature' | 'cozy' | 'travel' | 'minimal' | 'patterns';
@@ -50,13 +49,33 @@ export interface DiaryEntry {
   isFavorite?: boolean;
 }
 
+export interface SavedBook {
+    id: string;
+    title: string;
+    content: string;
+    genre: string;
+    createdAt: number;
+    coverImage?: string;
+}
+
+// Updated for SaaS
+export type SubscriptionTier = 'free' | 'pro' | 'mystic';
+
 export interface UserProgress {
   xp: number;
   level: number;
-  isPro: boolean;
+  subscriptionTier: SubscriptionTier; // Changed from boolean isPro
+  subscriptionRenewsAt?: number;
   streak: number;
   entriesCount: number;
   joinedAt: number;
+}
+
+export interface UserProfile {
+    name: string;
+    email: string;
+    avatar: string;
+    birthday: string;
 }
 
 export interface Achievement {
@@ -98,7 +117,32 @@ export interface BookConfig {
   userGuidance?: string; 
 }
 
+export interface AppSettings {
+    notifications: boolean;
+    notificationTime: string;
+    autoBackup: boolean;
+    themeMode: 'light' | 'dark'; 
+    fontStyle: FontStyle;
+    fontSize: number;
+    soundEnabled: boolean;
+    soundType: 'rain' | 'forest' | 'cafe' | 'fire';
+    isPinEnabled: boolean;
+    pinCode: string | null;
+    isBiometricsEnabled: boolean;
+    zenMode: boolean;
+}
+
 export interface IWindow extends Window {
   webkitSpeechRecognition: any;
   SpeechRecognition: any;
+}
+
+export interface SubscriptionPlan {
+    id: SubscriptionTier;
+    name: string;
+    price: string;
+    period: string;
+    features: string[];
+    highlight: boolean;
+    color: string;
 }
